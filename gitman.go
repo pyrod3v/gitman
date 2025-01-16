@@ -16,7 +16,7 @@ import (
 func main() {
 	actionPrompt := promptui.Select{
 		Label: "Select Git Action",
-		Items: []string{"init"},
+		Items: []string{"init", "add gitignore"},
 	}
 
 	_, action, err := actionPrompt.Run()
@@ -39,7 +39,12 @@ func main() {
 		log.Fatalf("Failed to resolve path: %v\n", err)
 	}
 
-	if action == "init" {
+	if action == "add gitignore" {
+		err := addGitignore(absPath)
+		if err != nil {
+			log.Fatalf("Failed to add .gitignore: %v\n", err)
+		}
+	} else if action == "init" {
 		initPrompt := promptui.Prompt{
 			Label:   "Enter repository name",
 			Default: filepath.Base(absPath),
