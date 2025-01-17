@@ -20,7 +20,6 @@ if __name__ == "__main__":
         path = sys.argv[1]
 
     if not os.path.exists(path):
-        print(f"'{path}' not found. Attempting to build it using 'go build'...")
         try:
             subprocess.run(["go", "build", "-o", path], check=True)
             print(f"Successfully built binary: {path}")
