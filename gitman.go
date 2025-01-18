@@ -31,7 +31,9 @@ func main() {
 		sort.Strings(gitignores)
 		gitignoresMutex.Unlock()
 	}
+	gitignoresMutex.Lock()
 	gitignores = append([]string{"None"}, gitignores...)
+	gitignoresMutex.Unlock()
 
 	actionPrompt := promptui.Select{
 		Label: "Select Git Action",
@@ -233,5 +235,6 @@ func fetchGitignores() error {
 	gitignoresMutex.Lock()
 	defer gitignoresMutex.Unlock()
 	gitignores = append(gitignores, templates...)
+	sort.Strings(gitignores)
 	return nil
 }
