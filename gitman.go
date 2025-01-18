@@ -98,7 +98,7 @@ func initializeRepo(absPath string) error {
 	user, _ := userPrompt.Run()
 
 	if user != "" {
-		cmd := exec.Command("git", "-C", absPath, "config", user)
+		cmd := exec.Command("git", "-C", absPath, "config", "user.name", user)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
@@ -114,7 +114,7 @@ func initializeRepo(absPath string) error {
 	email, _ := emailPrompt.Run()
 
 	if email != "" {
-		cmd := exec.Command("git", "-C", absPath, "config", email)
+		cmd := exec.Command("git", "-C", absPath, "config", "user.email", email)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
