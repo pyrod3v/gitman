@@ -1,5 +1,5 @@
 # Gitman
-Gitman is an interactive git management tool
+Gitman is a TUI tool for creating and managing git repositories 
 
 ## Features
 - Repository initialization
