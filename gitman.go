@@ -39,13 +39,19 @@ func main() {
 		Label: "Select Git Action",
 		Items: []string{"init", "add gitignore"},
 	}
-	_, action, _ := actionPrompt.Run()
+	_, action, err := actionPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v\n", err)
+	}
 
 	pathPrompt := promptui.Prompt{
 		Label:   "Enter path",
 		Default: ".",
 	}
-	path, _ := pathPrompt.Run()
+	path, err := pathPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v\n", err)
+	}
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -97,7 +103,10 @@ func initializeRepo(absPath string) error {
 		Label:   "Git user.name (leave empty to use default)",
 		Default: "",
 	}
-	user, _ := userPrompt.Run()
+	user, err := userPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v\n", err)
+	}
 
 	if user != "" {
 		cmd := exec.Command("git", "-C", absPath, "config", "user.name", user)
@@ -113,7 +122,10 @@ func initializeRepo(absPath string) error {
 		Label:   "Git user.email (leave empty to use default)",
 		Default: "",
 	}
-	email, _ := emailPrompt.Run()
+	email, err := emailPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v\n", err)
+	}
 
 	if email != "" {
 		cmd := exec.Command("git", "-C", absPath, "config", "user.email", email)
@@ -130,7 +142,10 @@ func initializeRepo(absPath string) error {
 		Default:   "",
 		AllowEdit: true,
 	}
-	remoteURL, _ := remotePrompt.Run()
+	remoteURL, err := remotePrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v\n", err)
+	}
 
 	if remoteURL != "" {
 		cmd := exec.Command("git", "-C", absPath, "remote", "add", "origin", remoteURL)
@@ -155,7 +170,11 @@ func addGitignore(path string) error {
 		},
 	}
 
-	_, template, _ := gitignorePrompt.Run()
+	_, template, err := gitignorePrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v\n", err)
+	}
+
 	if template == "None" {
 		return nil
 	}
