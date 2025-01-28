@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pyrod3v/gitman/internal/app"
 	"github.com/manifoldco/promptui"
 )
 
 func main() {
-	loadGitignores()
+	app.loadGitignores()
 
 	actionPrompt := promptui.Select{
 		Label: "Select Git Action",
@@ -38,12 +39,12 @@ func main() {
 
 	switch action {
 	case "add gitignore":
-		if err := addGitignore(absPath); err != nil {
+		if err := app.addGitignore(absPath); err != nil {
 			log.Fatalf("Failed to add .gitignore: %v\n", err)
 		}
 		fmt.Println("Successfully added .gitignore!")
 	case "init":
-		if err := initializeRepo(absPath); err != nil {
+		if err := app.initializeRepo(absPath); err != nil {
 			log.Fatalf("Failed to initialize repository: %v\n", err)
 		}
 		fmt.Println("Successfully initalized repository!")
