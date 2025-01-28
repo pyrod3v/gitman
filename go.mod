@@ -1,4 +1,4 @@
-module gitman
+module github.com/pyrod3v/gitman
 
 go 1.23.4
 
