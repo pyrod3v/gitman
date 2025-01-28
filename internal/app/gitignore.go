@@ -12,14 +12,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pyrod3v/gitman/cmd/gitman"
 	"github.com/manifoldco/promptui"
 )
 
 var gitignores []string
 var gitignoresMutex sync.Mutex
 
-func addGitignore(path string) error {
+func AddGitignore(path string) error {
 	gitignorePrompt := promptui.Select{
 		Label: "Select Gitignore Template",
 		Items: gitignores,
@@ -38,7 +37,7 @@ func addGitignore(path string) error {
 		return nil
 	}
 
-	gitignorePath := filepath.Join(gitman.getConfigDir(), "gitignores", template+".gitignore")
+	gitignorePath := filepath.Join(getConfigDir(), "gitignores", template+".gitignore")
 	if content, err := os.ReadFile(gitignorePath); err == nil {
 		return os.WriteFile(filepath.Join(path, ".gitignore"), content, 0644)
 	}
@@ -64,7 +63,7 @@ func addGitignore(path string) error {
 	return nil
 }
 
-func loadGitignores() {
+func LoadGitignores() {
 	go func() {
 		if err := fetchGitignores(); err != nil {
 			log.Panicf("Failed to fetch gitignore templates: %v\n", err)
@@ -82,7 +81,7 @@ func loadGitignores() {
 }
 
 func loadCustomGitignores() ([]string, error) {
-	gitignoreDir := filepath.Join(gitman.getConfigDir(), "gitignores")
+	gitignoreDir := filepath.Join(getConfigDir(), "gitignores")
 	entries, err := os.ReadDir(gitignoreDir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

@@ -3,16 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/pyrod3v/gitman/internal/app"
 	"github.com/manifoldco/promptui"
 )
 
 func main() {
-	app.loadGitignores()
+	app.LoadGitignores()
 
 	actionPrompt := promptui.Select{
 		Label: "Select Git Action",
@@ -39,25 +37,15 @@ func main() {
 
 	switch action {
 	case "add gitignore":
-		if err := app.addGitignore(absPath); err != nil {
+		if err := app.AddGitignore(absPath); err != nil {
 			log.Fatalf("Failed to add .gitignore: %v\n", err)
 		}
 		fmt.Println("Successfully added .gitignore!")
 	case "init":
-		if err := app.initializeRepo(absPath); err != nil {
+		if err := app.InitializeRepo(absPath); err != nil {
 			log.Fatalf("Failed to initialize repository: %v\n", err)
 		}
 		fmt.Println("Successfully initalized repository!")
 	}
 }
 
-func getConfigDir() string {
-	if configDir := os.Getenv("XDG_CONFIG_HOME"); configDir != "" {
-		return configDir
-	}
-	homeDir, _ := os.UserHomeDir()
-	if strings.Contains(strings.ToLower(os.Getenv("OS")), "windows") {
-		return filepath.Join(homeDir, "AppData", "Roaming", "gitman")
-	}
-	return filepath.Join(homeDir, ".config", "gitman")
-}

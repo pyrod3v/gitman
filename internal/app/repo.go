@@ -10,7 +10,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func initializeRepo(absPath string) error {
+func InitializeRepo(absPath string) error {
 	initPrompt := promptui.Prompt{
 		Label:   "Enter repository name",
 		Default: filepath.Base(absPath),
@@ -35,7 +35,7 @@ func initializeRepo(absPath string) error {
 	}
 	fmt.Println("Repository initialized successfully!")
 
-	if err := addGitignore(absPath); err != nil {
+	if err := AddGitignore(absPath); err != nil {
 		fmt.Printf(".gitignore could not be added to the repository: %v\n", err)
 	}
 
