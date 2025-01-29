@@ -15,7 +15,7 @@ To add custom .gitignore templates, put any `<name>.gitignore` file in the gitig
 To install the application, simply run `go install https://github.com/pyrod3v/gitman/cmd/gitman@latest` or clone this repository and run `go install`
 
 ## Contributing
-All sorts of contributions are welcome. To, contribute:
+All sorts of contributions are welcome. To contribute:
 1. Fork this repository
 2. Create your feature branch
 3. Commit and push your changes
