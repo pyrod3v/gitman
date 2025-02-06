@@ -12,7 +12,7 @@ The application's configuration is located at `$USER/.config/gitman` on unix-lik
 To add custom .gitignore templates, put any `<name>.gitignore` file in the gitignore directory in your config.
 
 ## Installing
-To install the application, simply run `go install https://github.com/pyrod3v/gitman/cmd/gitman@latest` or clone this repository and run `go install`
+To install the application, simply run `go install https://github.com/pyrod3v/gitman/cmd/gitman@latest` or clone this repository and run `go install ./...`
 
 ## Contributing
 All sorts of contributions are welcome. To contribute:
