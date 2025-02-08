@@ -53,7 +53,7 @@ func AddGitignore(path string) error {
 
 	var builder strings.Builder
 	for _, template := range selectedTemplates {
-		gitignorePath := filepath.Join(GetConfigDir(), "gitignores", template + ".gitignore")
+		gitignorePath := filepath.Join(GetConfigDir(), "gitignores", template+".gitignore")
 		if content, err := os.ReadFile(gitignorePath); err == nil {
 			builder.WriteString(string(content))
 			builder.WriteString("\n")
