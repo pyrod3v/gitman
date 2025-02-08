@@ -13,19 +13,17 @@
 
 package app
 
-import(
+import (
+	"fmt"
 	"os"
-	"strings"
 	"path/filepath"
 )
 
-func getConfigDir() string {
-	if configDir := os.Getenv("XDG_CONFIG_HOME"); configDir != "" {
-		return configDir
+func GetConfigDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("Error retrieving home directory: %v\n", err)
+		os.Exit(1)
 	}
-	homeDir, _ := os.UserHomeDir()
-	if strings.Contains(strings.ToLower(os.Getenv("OS")), "windows") {
-		return filepath.Join(homeDir, "AppData", "Roaming", "gitman")
-	}
-	return filepath.Join(homeDir, ".config", "gitman")
+	return filepath.Join(home, ".gitman")
 }

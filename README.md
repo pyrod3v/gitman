@@ -8,8 +8,7 @@ _Check [gitman-lite](https://github.com/pyrod3v/gitman-lite) if you want a faste
 - Custom gitignore templates
 
 ## Configuration
-The application's configuration is located at `$USER/.config/gitman` on unix-like systems and at `%appdata%\Roaming\gitman` on Windows.
-To add custom .gitignore templates, put any `<name>.gitignore` file in the gitignore directory in your config.
+To add custom .gitignore templates, put any `<name>.gitignore` file in `$USER/.gitman/gitignores/`.  
 
 ## Installing
 To install the application, simply run `go install https://github.com/pyrod3v/gitman/cmd/gitman@latest` or clone this repository and run `go install ./...`

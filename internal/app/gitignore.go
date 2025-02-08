@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,49 +24,59 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/manifoldco/promptui"
+	"github.com/charmbracelet/huh"
 )
 
 var gitignores []string
 var gitignoresMutex sync.Mutex
 
 func AddGitignore(path string) error {
-	gitignorePrompt := promptui.Select{
-		Label: "Select Gitignore Template",
-		Items: gitignores,
-		Searcher: func(input string, index int) bool {
-			template := strings.ToLower(gitignores[index])
-			return strings.Contains(template, strings.ToLower(input))
-		},
+	var selectedTemplates []string
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Select .gitignore templates").
+				Options(huh.NewOptions(gitignores...)...).
+				Value(&selectedTemplates).
+				Height(20),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		return fmt.Errorf("form failed: %v", err)
 	}
 
-	_, template, err := gitignorePrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
-	}
-
-	if template == "None" {
+	if len(selectedTemplates) == 0 {
 		return nil
 	}
 
-	gitignorePath := filepath.Join(getConfigDir(), "gitignores", template+".gitignore")
-	if content, err := os.ReadFile(gitignorePath); err == nil {
-		return os.WriteFile(filepath.Join(path, ".gitignore"), content, 0644)
+	var builder strings.Builder
+	for _, template := range selectedTemplates {
+		gitignorePath := filepath.Join(GetConfigDir(), "gitignores", template + ".gitignore")
+		if content, err := os.ReadFile(gitignorePath); err == nil {
+			builder.WriteString(string(content))
+			builder.WriteString("\n")
+			continue
+		}
+
+		url := fmt.Sprintf("https://www.toptal.com/developers/gitignore/api/%s", template)
+		res, err := http.Get(url)
+		if err != nil {
+			return fmt.Errorf("failed to fetch gitignore template: %v", err)
+		}
+		defer res.Body.Close()
+
+		content, err := io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read gitignore template: %v", err)
+		}
+
+		builder.WriteString(string(content))
+		builder.WriteString("\n")
 	}
 
-	url := fmt.Sprintf("https://www.toptal.com/developers/gitignore/api/%s", template)
-	res, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("failed to fetch gitignore template: %v", err)
-	}
-	defer res.Body.Close()
-
-	content, err := io.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read gitignore template: %v", err)
-	}
-
-	err = os.WriteFile(filepath.Join(path, ".gitignore"), content, 0644)
+	err := os.WriteFile(filepath.Join(path, ".gitignore"), []byte(builder.String()), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write .gitignore: %v", err)
 	}
@@ -77,24 +86,26 @@ func AddGitignore(path string) error {
 }
 
 func LoadGitignores() {
-	go func() {
-		if err := fetchGitignores(); err != nil {
-			log.Panicf("Failed to fetch gitignore templates: %v\n", err)
-		}
-	}()
 	if customGitignores, err := loadCustomGitignores(); err == nil {
 		gitignoresMutex.Lock()
 		gitignores = append(customGitignores, gitignores...)
 		gitignoresMutex.Unlock()
 	}
-	gitignoresMutex.Lock()
-	sort.Strings(gitignores)
-	gitignores = append([]string{"None"}, gitignores...) // ensure 'None' is the first option
-	gitignoresMutex.Unlock()
+	go func() {
+		fetchedGitignores, err := fetchGitignores()
+		if err != nil {
+			fmt.Printf("Failed to fetch gitignore templates: %v\n", err)
+		}
+		gitignoresMutex.Lock()
+		// the fetched gtitignore list has newlines, so remove them
+		gitignores = append(gitignores, strings.Fields(strings.Join(fetchedGitignores, "\n"))...)
+		sort.Strings(gitignores)
+		gitignoresMutex.Unlock()
+	}()
 }
 
 func loadCustomGitignores() ([]string, error) {
-	gitignoreDir := filepath.Join(getConfigDir(), "gitignores")
+	gitignoreDir := filepath.Join(GetConfigDir(), "gitignores")
 	entries, err := os.ReadDir(gitignoreDir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -115,22 +126,17 @@ func loadCustomGitignores() ([]string, error) {
 	return customGitignores, nil
 }
 
-func fetchGitignores() error {
+func fetchGitignores() ([]string, error) {
 	res, err := http.Get("https://www.toptal.com/developers/gitignore/api/list")
 	if err != nil {
-		return fmt.Errorf("failed to fetch gitignore template list: %v", err)
+		return nil, fmt.Errorf("failed to fetch gitignore template list: %v", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
+		return nil, fmt.Errorf("failed to read response body: %v", err)
 	}
 
-	templates := strings.Split(string(body), ",")
-	gitignoresMutex.Lock()
-	defer gitignoresMutex.Unlock()
-	gitignores = append(gitignores, templates...)
-	sort.Strings(gitignores)
-	return nil
+	return strings.Split(string(body), ","), nil
 }

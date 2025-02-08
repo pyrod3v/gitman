@@ -18,29 +18,40 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/charmbracelet/huh"
 	"github.com/pyrod3v/gitman/internal/app"
-	"github.com/manifoldco/promptui"
 )
 
 func main() {
 	app.LoadGitignores()
 
-	actionPrompt := promptui.Select{
-		Label: "Select Git Action",
-		Items: []string{"init", "add gitignore"},
-	}
-	_, action, err := actionPrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
+	var action string
+	var path string
+
+	actionForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select Git Action").
+				Options(huh.NewOptions("init", "add gitignore")...).
+				Value(&action),
+		),
+	)
+
+	if err := actionForm.Run(); err != nil {
+		log.Fatalf("Form failed: %v\n", err)
 	}
 
-	pathPrompt := promptui.Prompt{
-		Label:   "Enter path",
-		Default: ".",
-	}
-	path, err := pathPrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
+	pathForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Enter path").
+				Value(&path).
+				Placeholder("."),
+		),
+	)
+
+	if err := pathForm.Run(); err != nil {
+		log.Fatalf("Form failed: %v\n", err)
 	}
 
 	absPath, err := filepath.Abs(path)
@@ -58,7 +69,6 @@ func main() {
 		if err := app.InitializeRepo(absPath); err != nil {
 			log.Fatalf("Failed to initialize repository: %v\n", err)
 		}
-		fmt.Println("Successfully initalized repository!")
+		fmt.Println("Successfully initialized repository!")
 	}
 }
-

@@ -15,25 +15,30 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
-	"github.com/manifoldco/promptui"
+	"github.com/charmbracelet/huh"
 )
 
 func InitializeRepo(absPath string) error {
-	initPrompt := promptui.Prompt{
-		Label:   "Enter repository name",
-		Default: filepath.Base(absPath),
-	}
-	name, err := initPrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
+	var name, user, email, remoteURL string
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Enter repository name").
+				Value(&name).
+				Placeholder(filepath.Base(absPath)),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		fmt.Printf("Repository form failed: %v\n", err)
 	}
 
-	if name != filepath.Base(absPath) {
+	if name != "" && name != filepath.Base(absPath) {
 		absPath = filepath.Join(filepath.Dir(absPath), name)
 		if err := os.MkdirAll(absPath, 0755); err != nil {
 			return fmt.Errorf("failed to create directory: %v", err)
@@ -44,7 +49,7 @@ func InitializeRepo(absPath string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to initialize git repository: %v", err)
+		fmt.Printf("Failed to initialize git repository: %v\n", err)
 	}
 	fmt.Println("Repository initialized successfully!")
 
@@ -52,13 +57,15 @@ func InitializeRepo(absPath string) error {
 		fmt.Printf(".gitignore could not be added to the repository: %v\n", err)
 	}
 
-	userPrompt := promptui.Prompt{
-		Label:   "Git user.name (leave empty to use default)",
-		Default: "",
-	}
-	user, err := userPrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
+	userForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().Title("Git user.name (leave empty to use default)").Value(&user),
+			huh.NewInput().Title("Git user.email (leave empty to use default)").Value(&email),
+		),
+	)
+
+	if err := userForm.Run(); err != nil {
+		fmt.Printf("User form failed: %v\n", err)
 	}
 
 	if user != "" {
@@ -71,15 +78,6 @@ func InitializeRepo(absPath string) error {
 		}
 	}
 
-	emailPrompt := promptui.Prompt{
-		Label:   "Git user.email (leave empty to use default)",
-		Default: "",
-	}
-	email, err := emailPrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
-	}
-
 	if email != "" {
 		cmd := exec.Command("git", "-C", absPath, "config", "user.email", email)
 		cmd.Stdout = os.Stdout
@@ -90,14 +88,14 @@ func InitializeRepo(absPath string) error {
 		}
 	}
 
-	remotePrompt := promptui.Prompt{
-		Label:     "Remote repository URL (leave empty to skip)",
-		Default:   "",
-		AllowEdit: true,
-	}
-	remoteURL, err := remotePrompt.Run()
-	if err != nil {
-		log.Fatalf("Prompt failed: %v\n", err)
+	remoteForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().Title("Remote repository URL (leave empty to skip)").Value(&remoteURL),
+		),
+	)
+
+	if err := remoteForm.Run(); err != nil {
+		fmt.Printf("Remote form failed: %v\n", err)
 	}
 
 	if remoteURL != "" {
