@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	app.LoadGitignores()
+	gitman.LoadGitignores()
 
 	var action string
 	var path string
@@ -61,12 +61,12 @@ func main() {
 
 	switch action {
 	case "add gitignore":
-		if err := app.AddGitignore(absPath); err != nil {
+		if err := gitman.AddGitignore(absPath); err != nil {
 			log.Fatalf("Failed to add .gitignore: %v\n", err)
 		}
 		fmt.Println("Successfully added .gitignore!")
 	case "init":
-		if err := app.InitializeRepo(absPath); err != nil {
+		if err := gitman.InitializeRepo(absPath); err != nil {
 			log.Fatalf("Failed to initialize repository: %v\n", err)
 		}
 		fmt.Println("Successfully initialized repository!")
