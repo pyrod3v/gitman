@@ -25,21 +25,22 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/huh"
+	"github.com/spf13/viper"
 )
 
 var gitignores []string
 var gitignoresMutex sync.Mutex
 
 func AddGitignore(path string) error {
-	var selectedTemplates []string
+	var selected []string
 
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Title("Select .gitignore templates").
 				Options(huh.NewOptions(gitignores...)...).
-				Value(&selectedTemplates).
-				Height(20),
+				Value(&selected).
+				Height(10),
 		),
 	)
 
@@ -47,13 +48,20 @@ func AddGitignore(path string) error {
 		return fmt.Errorf("form failed: %v", err)
 	}
 
-	if len(selectedTemplates) == 0 {
+	if len(selected) == 0 {
 		return nil
 	}
 
 	var builder strings.Builder
-	for _, template := range selectedTemplates {
+	for _, template := range selected {
 		gitignorePath := filepath.Join(GetConfigDir(), "gitignores", template+".gitignore")
+		if content, err := os.ReadFile(gitignorePath); err == nil {
+			builder.WriteString(string(content))
+			builder.WriteString("\n")
+			continue
+		}
+
+		gitignorePath = filepath.Join(GetConfigDir(), ".cache", "gitignores", template+".gitignore")
 		if content, err := os.ReadFile(gitignorePath); err == nil {
 			builder.WriteString(string(content))
 			builder.WriteString("\n")
@@ -70,6 +78,18 @@ func AddGitignore(path string) error {
 		content, err := io.ReadAll(res.Body)
 		if err != nil {
 			return fmt.Errorf("failed to read gitignore template: %v", err)
+		}
+
+		if viper.GetBool("CacheGitignores") {
+			dir := filepath.Join(GetConfigDir(), ".cache", "gitignores")
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("failed to create cache directory: %v", err)
+			}
+			cacheFile := filepath.Join(dir, template+".gitignore")
+			err := os.WriteFile(cacheFile, content, 0644)
+			if err != nil {
+				fmt.Printf("Failed to cache gitignore template: %v\n", err)
+			}
 		}
 
 		builder.WriteString(string(content))
