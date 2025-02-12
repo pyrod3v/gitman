@@ -40,7 +40,7 @@ func AddGitignore(path string) error {
 				Title("Select .gitignore templates").
 				Options(huh.NewOptions(gitignores...)...).
 				Value(&selected).
-				Height(10),
+				Height(min(10, len(gitignores))),
 		),
 	)
 
