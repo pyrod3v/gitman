@@ -101,7 +101,6 @@ func AddGitignore(path string) error {
 		return fmt.Errorf("failed to write .gitignore: %v", err)
 	}
 
-	fmt.Println(".gitignore added!")
 	return nil
 }
 

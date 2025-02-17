@@ -50,9 +50,11 @@ func main() {
 	}
 
 	viper.SetDefault("CacheGitignores", false)
+	viper.SetDefault("CacheLicenses", false)
 	viper.WriteConfig()
 
 	gitman.LoadGitignores()
+	gitman.LoadLicenses()
 
 	var action string
 	var path string
@@ -61,7 +63,7 @@ func main() {
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("Select Git Action").
-				Options(huh.NewOptions("init", "add gitignore")...).
+				Options(huh.NewOptions("init", "add gitignore", "add license")...).
 				Value(&action),
 		),
 	)
@@ -89,15 +91,20 @@ func main() {
 	}
 
 	switch action {
-	case "add gitignore":
-		if err := gitman.AddGitignore(absPath); err != nil {
-			log.Fatalf("Failed to add .gitignore: %v\n", err)
-		}
-		fmt.Println("Successfully added .gitignore!")
 	case "init":
 		if err := gitman.InitializeRepo(absPath); err != nil {
 			log.Fatalf("Failed to initialize repository: %v\n", err)
 		}
 		fmt.Println("Successfully initialized repository!")
+	case "add gitignore":
+		if err := gitman.AddGitignore(absPath); err != nil {
+			log.Fatalf("Failed to add .gitignore: %v\n", err)
+		}
+		fmt.Println("Successfully added .gitignore!")
+	case "add license":
+		if err := gitman.AddLicense(absPath); err != nil {
+			log.Fatalf("Failed to add license: %v\n", err)
+		}
+		fmt.Println("Successfully added license!")
 	}
 }

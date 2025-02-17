@@ -57,6 +57,10 @@ func InitializeRepo(absPath string) error {
 		fmt.Printf(".gitignore could not be added to the repository: %v\n", err)
 	}
 
+	if err := AddLicense(absPath); err != nil {
+		fmt.Printf("License could not be added to the repository: %v\n", err)
+	}
+
 	userForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().Title("Git user.name (leave empty to use default)").Value(&user),
