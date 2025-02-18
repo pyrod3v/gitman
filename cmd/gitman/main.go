@@ -69,12 +69,18 @@ func main() {
 		log.Fatalf("Form failed: %v\n", err)
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting working directory: %v\n", err)
+		wd = "."
+	}
+
 	pathForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Enter path").
 				Value(&path).
-				Placeholder("."),
+				Placeholder(wd),
 		),
 	)
 
