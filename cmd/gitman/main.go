@@ -25,28 +25,25 @@ import (
 )
 
 func main() {
-	if _, err := os.Stat(gitman.GetConfigDir()); os.IsNotExist(err) {
-		if err := os.MkdirAll(gitman.GetConfigDir(), 0755); err != nil {
-			fmt.Printf("Error creating config directory: %v\n", err)
-			os.Exit(1)
-		}
-	}
-
-	configFile := filepath.Join(gitman.GetConfigDir(), "config.yaml")
-	if _, err := os.Stat(configFile); err != nil && os.IsNotExist(err) {
-		_, err := os.Create(configFile)
-		if err != nil {
-			fmt.Printf("Error creating config file: %v\n", err)
-			os.Exit(1)
-		}
-	}
-
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./.gitman")
 	viper.AddConfigPath(gitman.GetConfigDir())
+
 	if err := viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("error loading config: %w", err))
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			if _, err := os.Stat(gitman.GetConfigDir()); os.IsNotExist(err) {
+				if err := os.MkdirAll(gitman.GetConfigDir(), 0755); err != nil {
+					panic(fmt.Errorf("error creating config directory: %w", err))
+				}
+			}
+			_, err := os.Create(filepath.Join(gitman.GetConfigDir(), "config.yaml"))
+			if err != nil {
+				panic(fmt.Errorf("error creating config file: %w", err))
+			}
+		} else {
+			panic(fmt.Errorf("fatal error config file: %w", err))
+		}
 	}
 
 	viper.SetDefault("CacheGitignores", false)
