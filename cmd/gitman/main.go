@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/pyrod3v/gitman/internal/app"
 	"github.com/spf13/viper"
@@ -63,7 +64,10 @@ func main() {
 				Options(huh.NewOptions("init", "add gitignore", "add license")...).
 				Value(&action),
 		),
-	)
+	).WithKeyMap(func(k *huh.KeyMap) *huh.KeyMap {
+		k.Quit = key.NewBinding(key.WithKeys("q", "ctrl+c"))
+		return k
+	}(huh.NewDefaultKeyMap()))
 
 	if err := actionForm.Run(); err != nil {
 		log.Fatalf("Form failed: %v\n", err)

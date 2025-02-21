@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/viper"
 )
@@ -43,7 +44,10 @@ func AddLicense(path string) error {
 				Value(&selected).
 				Height(min(10, len(licenses))),
 		),
-	)
+	).WithKeyMap(func(k *huh.KeyMap) *huh.KeyMap {
+		k.Quit = key.NewBinding(key.WithKeys("q", "ctrl+c"))
+		return k
+	}(huh.NewDefaultKeyMap()))
 
 	if err := form.Run(); err != nil {
 		return fmt.Errorf("form failed: %v", err)
