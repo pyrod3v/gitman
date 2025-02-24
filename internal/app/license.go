@@ -15,7 +15,6 @@ package gitman
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -102,43 +101,36 @@ func AddLicense(path string) error {
 }
 
 func LoadLicenses() {
-	if customLicenses, err := loadCustomLicenses(); err == nil {
-		licensesMutex.Lock()
-		licenses = append(customLicenses, licenses...)
-		licensesMutex.Unlock()
-	}
+	licensesMutex.Lock()
+	licenses = append(licenses, loadCustomLicenses()...)
+	licensesMutex.Unlock()
+
 	go func() {
 		fetchedLicenses, err := fetchLicenses()
 		if err != nil {
-			panic(err)
+			fmt.Fprintln(os.Stderr, err)
+			return
 		}
 		licensesMutex.Lock()
-		licenses = append(licenses, strings.Fields(strings.Join(fetchedLicenses, "\n"))...)
+		licenses = strings.Fields(strings.Join(fetchedLicenses, "\n"))
+		licenses = RemoveDuplicates(licenses)
 		sort.Strings(licenses)
 		licensesMutex.Unlock()
 	}()
 }
 
-func loadCustomLicenses() ([]string, error) {
-	gitignoreDir := filepath.Join(GetConfigDir(), "licenses")
-	entries, err := os.ReadDir(gitignoreDir)
+func loadCustomLicenses() []string {
+	customLicenses, err := LoadFromDir(filepath.Join(GetConfigDir(), "licenses"), "")
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			err := os.MkdirAll(gitignoreDir, 0755)
-			if err != nil {
-				err = fmt.Errorf("failed to create directory: %v", err)
-			}
-			return []string{}, err
-		}
-		return nil, err
+		fmt.Fprintf(os.Stderr, "Error loading custom licenses: %v", err)
 	}
-	var customGitignores []string
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			customGitignores = append(customGitignores, entry.Name())
-		}
+
+	cachedLicenses, err := LoadFromDir(filepath.Join(GetConfigDir(), ".cache", "licenses"), "")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading cached licenses: %v", err)
 	}
-	return customGitignores, nil
+
+	return append(customLicenses, cachedLicenses...)
 }
 
 func fetchLicenses() ([]string, error) {

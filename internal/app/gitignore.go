@@ -14,7 +14,6 @@
 package gitman
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -109,44 +108,37 @@ func AddGitignore(path string) error {
 }
 
 func LoadGitignores() {
-	if customGitignores, err := loadCustomGitignores(); err == nil {
-		gitignoresMutex.Lock()
-		gitignores = append(customGitignores, gitignores...)
-		gitignoresMutex.Unlock()
-	}
+	gitignoresMutex.Lock()
+	gitignores = append(gitignores, loadCustomGitignores()...)
+	gitignoresMutex.Unlock()
+
 	go func() {
 		fetchedGitignores, err := fetchGitignores()
 		if err != nil {
-			panic(err)
+			fmt.Fprintln(os.Stderr, err)
+			return
 		}
 		gitignoresMutex.Lock()
 		// the fetched gtitignore list has newlines, so remove them
-		gitignores = append(gitignores, strings.Fields(strings.Join(fetchedGitignores, "\n"))...)
+		gitignores = strings.Fields(strings.Join(fetchedGitignores, "\n"))
+		gitignores = RemoveDuplicates(gitignores)
 		sort.Strings(gitignores)
 		gitignoresMutex.Unlock()
 	}()
 }
 
-func loadCustomGitignores() ([]string, error) {
-	gitignoreDir := filepath.Join(GetConfigDir(), "gitignores")
-	entries, err := os.ReadDir(gitignoreDir)
+func loadCustomGitignores() []string {
+	customGitignores, err := LoadFromDir(filepath.Join(GetConfigDir(), "gitignores"), ".gitignore")
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			err := os.MkdirAll(gitignoreDir, 0755)
-			if err != nil {
-				err = fmt.Errorf("failed to create directory: %v", err)
-			}
-			return []string{}, err
-		}
-		return nil, err
+		fmt.Fprintf(os.Stderr, "Error loading custom gitignores: %v", err)
 	}
-	var customGitignores []string
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".gitignore") {
-			customGitignores = append(customGitignores, strings.TrimSuffix(entry.Name(), ".gitignore"))
-		}
+
+	cachedGitignores, err := LoadFromDir(filepath.Join(GetConfigDir(), ".cache", "gitignores"), ".gitignore")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading cached gitignores: %v", err)
 	}
-	return customGitignores, nil
+
+	return append(customGitignores, cachedGitignores...)
 }
 
 func fetchGitignores() ([]string, error) {
