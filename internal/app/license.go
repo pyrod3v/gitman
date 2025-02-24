@@ -110,7 +110,7 @@ func LoadLicenses() {
 	go func() {
 		fetchedLicenses, err := fetchLicenses()
 		if err != nil {
-			fmt.Printf("Failed to fetch license templates: %v\n", err)
+			panic(err)
 		}
 		licensesMutex.Lock()
 		licenses = append(licenses, strings.Fields(strings.Join(fetchedLicenses, "\n"))...)

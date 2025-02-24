@@ -117,7 +117,7 @@ func LoadGitignores() {
 	go func() {
 		fetchedGitignores, err := fetchGitignores()
 		if err != nil {
-			fmt.Printf("Failed to fetch gitignore templates: %v\n", err)
+			panic(err)
 		}
 		gitignoresMutex.Lock()
 		// the fetched gtitignore list has newlines, so remove them
