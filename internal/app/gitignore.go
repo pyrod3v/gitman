@@ -119,8 +119,7 @@ func LoadGitignores() {
 			return
 		}
 		gitignoresMutex.Lock()
-		// the fetched gtitignore list has newlines, so remove them
-		gitignores = strings.Fields(strings.Join(fetchedGitignores, "\n"))
+		gitignores = append(gitignores, fetchedGitignores...)
 		gitignores = RemoveDuplicates(gitignores)
 		sort.Strings(gitignores)
 		gitignoresMutex.Unlock()
@@ -153,5 +152,5 @@ func fetchGitignores() ([]string, error) {
 		return nil, fmt.Errorf("failed to read response body: %v", err)
 	}
 
-	return strings.Split(string(body), ","), nil
+	return strings.Fields(strings.Join(strings.Split(string(body), ","), "\n")), nil
 }

@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -112,7 +111,7 @@ func LoadLicenses() {
 			return
 		}
 		licensesMutex.Lock()
-		licenses = strings.Fields(strings.Join(fetchedLicenses, "\n"))
+		licenses = append(licenses, fetchedLicenses...)
 		licenses = RemoveDuplicates(licenses)
 		sort.Strings(licenses)
 		licensesMutex.Unlock()
