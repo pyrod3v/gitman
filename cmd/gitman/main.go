@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func main() {
+func init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./.gitman")
@@ -53,7 +53,9 @@ func main() {
 
 	gitman.LoadGitignores()
 	gitman.LoadLicenses()
+}
 
+func main() {
 	var action string
 	var path string
 
