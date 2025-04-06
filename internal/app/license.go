@@ -14,146 +14,148 @@
 package gitman
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"sort"
-	"sync"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+    "os"
+    "path/filepath"
+    "sort"
+    "sync"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/huh"
-	"github.com/spf13/viper"
+     "github.com/charmbracelet/bubbles/key"
+    "github.com/charmbracelet/huh"
+    "github.com/spf13/viper"
 )
 
-var licenses []string
-var licensesMutex sync.Mutex
+var (
+    licenses []string
+    licensesMutex sync.Mutex
+)
 
 func AddLicense(path string) error {
-	var selected string
+    var selected string
 
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Select a license").
-				Options(huh.NewOptions(licenses...)...).
-				Value(&selected).
-				Height(min(10, len(licenses))),
-		),
-	).WithKeyMap(func(k *huh.KeyMap) *huh.KeyMap {
-		k.Quit = key.NewBinding(key.WithKeys("q", "ctrl+c"))
-		return k
-	}(huh.NewDefaultKeyMap()))
+    form := huh.NewForm(
+        huh.NewGroup(
+            huh.NewSelect[string]().
+                Title("Select a license").
+                Options(huh.NewOptions(licenses...)...).
+                Value(&selected).
+                Height(min(10, len(licenses))),
+        ),
+    ).WithKeyMap(func(k *huh.KeyMap) *huh.KeyMap {
+        k.Quit = key.NewBinding(key.WithKeys("q", "ctrl+c"))
+        return k
+    }(huh.NewDefaultKeyMap()))
 
-	if err := form.Run(); err != nil {
-		return fmt.Errorf("form failed: %v", err)
-	}
+    if err := form.Run(); err != nil {
+        return fmt.Errorf("form failed: %v", err)
+    }
 
-	if selected == "" {
-		return nil
-	}
+    if selected == "" {
+        return nil
+    }
 
-	licensePath := filepath.Join(GetConfigDir(), "licenses", selected)
-	if content, err := os.ReadFile(licensePath); err == nil {
-		return os.WriteFile(filepath.Join(path, "LICENSE"), content, 0644)
-	}
+    licensePath := filepath.Join(GetConfigDir(), "licenses", selected)
+    if content, err := os.ReadFile(licensePath); err == nil {
+        return os.WriteFile(filepath.Join(path, "LICENSE"), content, 0644)
+    }
 
-	licensePath = filepath.Join(GetConfigDir(), ".cache", "licenses", selected)
-	if content, err := os.ReadFile(licensePath); err == nil {
-		return os.WriteFile(filepath.Join(path, "LICENSE"), content, 0644)
-	}
+    licensePath = filepath.Join(GetConfigDir(), ".cache", "licenses", selected)
+    if content, err := os.ReadFile(licensePath); err == nil {
+        return os.WriteFile(filepath.Join(path, "LICENSE"), content, 0644)
+    }
 
-	url := fmt.Sprintf("https://api.github.com/licenses/%s", selected)
-	res, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("failed to fetch license: %v", err)
-	}
-	defer res.Body.Close()
+    url := fmt.Sprintf("https://api.github.com/licenses/%s", selected)
+    res, err := http.Get(url)
+    if err != nil {
+        return fmt.Errorf("failed to fetch license: %v", err)
+    }
+    defer res.Body.Close()
 
-	var licenseData struct {
-		Body string `json:"body"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&licenseData); err != nil {
-		return fmt.Errorf("failed to parse license JSON: %v", err)
-	}
+    var licenseData struct {
+        Body string `json:"body"`
+    }
+    if err := json.NewDecoder(res.Body).Decode(&licenseData); err != nil {
+        return fmt.Errorf("failed to parse license JSON: %v", err)
+    }
 
-	content := []byte(licenseData.Body)
-	if viper.GetBool("CacheLicenses") {
-		dir := filepath.Join(GetConfigDir(), ".cache", "licenses")
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create cache directory: %v", err)
-		}
-		cacheFile := filepath.Join(dir, selected)
-		if err := os.WriteFile(cacheFile, content, 0644); err != nil {
-			fmt.Printf("Failed to cache license: %v\n", err)
-		}
-	}
+    content := []byte(licenseData.Body)
+    if viper.GetBool("CacheLicenses") {
+        dir := filepath.Join(GetConfigDir(), ".cache", "licenses")
+        if err := os.MkdirAll(dir, 0755); err != nil {
+            return fmt.Errorf("failed to create cache directory: %v", err)
+        }
+        cacheFile := filepath.Join(dir, selected)
+        if err := os.WriteFile(cacheFile, content, 0644); err != nil {
+            fmt.Printf("Failed to cache license: %v\n", err)
+        }
+    }
 
-	err = os.WriteFile(filepath.Join(path, "LICENSE"), content, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write LICENSE file: %v", err)
-	}
+    err = os.WriteFile(filepath.Join(path, "LICENSE"), content, 0644)
+    if err != nil {
+        return fmt.Errorf("failed to write LICENSE file: %v", err)
+    }
 
-	return nil
+    return nil
 }
 
 func LoadLicenses() {
-	licensesMutex.Lock()
-	licenses = append(licenses, loadCustomLicenses()...)
-	licensesMutex.Unlock()
+    licensesMutex.Lock()
+    licenses = append(licenses, loadCustomLicenses()...)
+    licensesMutex.Unlock()
 
-	go func() {
-		fetchedLicenses, err := fetchLicenses()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		licensesMutex.Lock()
-		licenses = append(licenses, fetchedLicenses...)
-		licenses = RemoveDuplicates(licenses)
-		sort.Strings(licenses)
-		licensesMutex.Unlock()
-	}()
+    go func() {
+        fetchedLicenses, err := fetchLicenses()
+        if err != nil {
+            fmt.Fprintln(os.Stderr, err)
+            return
+        }
+        licensesMutex.Lock()
+        licenses = append(licenses, fetchedLicenses...)
+        licenses = RemoveDuplicates(licenses)
+        sort.Strings(licenses)
+        licensesMutex.Unlock()
+    }()
 }
 
 func loadCustomLicenses() []string {
-	customLicenses, err := LoadFromDir(filepath.Join(GetConfigDir(), "licenses"), "")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading custom licenses: %v", err)
-	}
+    customLicenses, err := LoadFromDir(filepath.Join(GetConfigDir(), "licenses"), "")
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error loading custom licenses: %v", err)
+    }
 
-	cachedLicenses, err := LoadFromDir(filepath.Join(GetConfigDir(), ".cache", "licenses"), "")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading cached licenses: %v", err)
-	}
+    cachedLicenses, err := LoadFromDir(filepath.Join(GetConfigDir(), ".cache", "licenses"), "")
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error loading cached licenses: %v", err)
+    }
 
-	return append(customLicenses, cachedLicenses...)
+    return append(customLicenses, cachedLicenses...)
 }
 
 func fetchLicenses() ([]string, error) {
-	res, err := http.Get("https://api.github.com/licenses")
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch license list: %v", err)
-	}
-	defer res.Body.Close()
+    res, err := http.Get("https://api.github.com/licenses")
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch license list: %v", err)
+    }
+    defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	}
+    body, err := io.ReadAll(res.Body)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read response body: %v", err)
+    }
 
-	var licenseList []struct {
-		Key string `json:"key"`
-	}
-	if err := json.Unmarshal(body, &licenseList); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %v", err)
-	}
+    var licenseList []struct {
+        Key string `json:"key"`
+    }
+    if err := json.Unmarshal(body, &licenseList); err != nil {
+        return nil, fmt.Errorf("failed to parse JSON: %v", err)
+    }
 
-	var licenses []string
-	for _, license := range licenseList {
-		licenses = append(licenses, license.Key)
-	}
-	return licenses, nil
+    var licenses []string
+    for _, license := range licenseList {
+        licenses = append(licenses, license.Key)
+    }
+    return licenses, nil
 }
